@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ТОП ДОНАТОВ KASPI</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: transparent;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .settings {
+      background: rgba(255,255,255,0.8);
+      padding: 10px 15px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .leaderboard {
+      background: rgba(255,255,255,0.9);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      width: 400px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      text-shadow: 0 0 5px rgba(0,0,0,0.2);
+      transition: color 0.3s, font-size 0.3s;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      transition: font-size 0.3s;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+      transition: color 0.3s;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 90%;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .copy-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #ff4655;
+      color: white;
+      cursor: pointer;
+      font-size: 1em;
+      transition: 0.3s;
+    }
+
+    .copy-btn:hover {
+      background: #e63745;
+    }
+
+    .copy-info {
+      font-size: 0.9em;
+      color: #333;
+      margin-top: 5px;
+      width: 100%;
+    }
+
+    tr:nth-child(2) td:first-child { color: gold; font-weight: bold; }
+    tr:nth-child(3) td:first-child { color: silver; font-weight: bold; }
+    tr:nth-child(4) td:first-child { color: #cd7f32; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="settings">
+    <label>Название: <input id="titleInput" type="text" placeholder="ТОП ДОНАТОВ KASPI"></label>
+    <label>Фон таблицы: <input id="tableColor" type="color"></label>
+    <label>Прозрачность: <input id="tableOpacity" type="range" min="0" max="1" step="0.1" value="0.9"></label>
+    <label>Скругление: <input id="borderRadius" type="range" min="0" max="50" step="1" value="20"></label>
+    <label>Размер шрифта (название): <input id="titleSize" type="number" min="10" max="100" value="32"></label>
+    <label>Цвет шрифта (название): <input id="titleColor" type="color" value="#d90000"></label>
+    <label>Размер шрифта (таблица): <input id="tableSize" type="number" min="10" max="50" value="16"></label>
+    <label>Цвет текста (имена): <input id="nameColor" type="color" value="#000000"></label>
+    <label>Цвет текста (суммы): <input id="sumColor" type="color" value="#000000"></label>
+    <label>Рамки: <input id="toggleBorders" type="checkbox" checked></label>
+    <label>Шрифт:
+      <select id="fontSelect">
+        <option value="Segoe UI">Segoe UI</option>
+        <option value="Arial">Arial</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Comic Sans MS">Comic Sans</option>
+      </select>
+    </label>
+    <button id="resetSettings">Сбросить</button>
+    <button class="copy-btn" onclick="copyURL()">Скопировать ссылку</button>
+    <div class="copy-info" id="copyStatus"></div>
+  </div>
+
+  <div class="content">
+    <div class="leaderboard">
+      <h1 id="title">ТОП ДОНАТОВ KASPI</h1>
+      <table>
+        <tr>
+          <th>Место</th>
+          <th>Имя</th>
+          <th>Сумма</th>
+        </tr>
+        <tr>
+          <td>🥇 ТОП-1</td>
+          <td><input id="name1" type="text" placeholder="Имя 1"></td>
+          <td><input id="sum1" type="number" placeholder="₸"></td>
+        </tr>
+        <tr>
+          <td>🥈 ТОП-2</td>
+          <td><input id="name2" type="text" placeholder="Имя 2"></td>
+          <td><input id="sum2" type="number" placeholder="₸"></td>
+        </tr>
+        <tr>
+          <td>🥉 ТОП-3</td>
+          <td><input id="name3" type="text" placeholder="Имя 3"></td>
+          <td><input id="sum3" type="number" placeholder="₸"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const title = document.getElementById('title');
+    const leaderboard = document.querySelector('.leaderboard');
+    const table = document.querySelector('table');
+
+    function save(key, value) { localStorage.setItem(key, value); }
+    function load(key, fallback) { return localStorage.getItem(key) || fallback; }
+
+    function copyURL() {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        document.getElementById('copyStatus').innerText = "Ссылка скопирована!";
+        setTimeout(() => document.getElementById('copyStatus').innerText = "", 2000);
+      }).catch(() => {
+        document.getElementById('copyStatus').innerText = "Не удалось скопировать";
+      });
+    }
+
+    document.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
+      input.value = load(input.id, '');
+      input.addEventListener('input', () => save(input.id, input.value));
+    });
+
+    const titleInput = document.getElementById('titleInput');
+    title.textContent = load('tableTitle', 'ТОП ДОНАТОВ KASPI');
+    titleInput.addEventListener('input', () => {
+      title.textContent = titleInput.value || 'ТОП ДОНАТОВ KASPI';
+      save('tableTitle', title.textContent);
+    });
+
+    const tableColor = document.getElementById('tableColor');
+    leaderboard.style.backgroundColor = load('tableColor', '#ffffff');
+    tableColor.addEventListener('input', () => {
+      leaderboard.style.backgroundColor = tableColor.value;
+      save('tableColor', tableColor.value);
+    });
+
+    const tableOpacity = document.getElementById('tableOpacity');
+    leaderboard.style.opacity = load('tableOpacity', '0.9');
+    tableOpacity.addEventListener('input', () => {
+      leaderboard.style.opacity = tableOpacity.value;
+      save('tableOpacity', tableOpacity.value);
+    });
+
+    const borderRadius = document.getElementById('borderRadius');
+    leaderboard.style.borderRadius = load('borderRadius', '20') + 'px';
+    borderRadius.addEventListener('input', () => {
+      leaderboard.style.borderRadius = borderRadius.value + 'px';
+      save('borderRadius', borderRadius.value);
+    });
+
+    const titleSize = document.getElementById('titleSize');
+    const titleColor = document.getElementById('titleColor');
+    title.style.fontSize = load('titleSize', '32') + 'px';
+    title.style.color = load('titleColor', '#d90000');
+    titleSize.addEventListener('input', () => {
+      title.style.fontSize = titleSize.value + 'px';
+      save('titleSize', titleSize.value);
+    });
+    titleColor.addEventListener('input', () => {
+      title.style.color = titleColor.value;
+      save('titleColor', titleColor.value);
+    });
+
+    const tableSize = document.getElementById('tableSize');
+    table.style.fontSize = load('tableSize', '16') + 'px';
+    tableSize.addEventListener('input', () => {
+      table.style.fontSize = tableSize.value + 'px';
+      save('tableSize', tableSize.value);
+    });
+
+    const nameColor = document.getElementById('nameColor');
+    const sumColor = document.getElementById('sumColor');
+    document.querySelectorAll('input[id^="name"]').forEach(el => el.style.color = load('nameColor', '#000000'));
+    document.querySelectorAll('input[id^="sum"]').forEach(el => el.style.color = load('sumColor', '#000000'));
+    nameColor.addEventListener('input', () => {
+      document.querySelectorAll('input[id^="name"]').forEach(el => el.style.color = nameColor.value);
+      save('nameColor', nameColor.value);
+    });
+    sumColor.addEventListener('input', () => {
+      document.querySelectorAll('input[id^="sum"]').forEach(el => el.style.color = sumColor.value);
+      save('sumColor', sumColor.value);
+    });
+
+    const toggleBorders = document.getElementById('toggleBorders');
+    const applyBorders = () => {
+      document.querySelectorAll('th, td').forEach(cell => cell.style.borderBottom = toggleBorders.checked ? '1px solid #ddd' : 'none');
+    };
+    toggleBorders.checked = load('borders', 'true') === 'true';
+    applyBorders();
+    toggleBorders.addEventListener('change', () => {
+      save('borders', toggleBorders.checked);
+      applyBorders();
+    });
+
+    const fontSelect = document.getElementById('fontSelect');
+    document.body.style.fontFamily = load('font', 'Segoe UI');
+    fontSelect.addEventListener('change', () => {
+      document.body.style.fontFamily = fontSelect.value;
+      save('font', fontSelect.value);
+    });
+
+    document.getElementById('resetSettings').addEventListener('click', () => {
+      localStorage.clear();
+      location.reload();
+    });
+  </script>
+</body>
+</html>
