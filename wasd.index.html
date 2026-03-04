@@ -3,260 +3,567 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ТОП ДОНАТОВ KASPI</title>
+  <title>Country Clash Overlay</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: transparent;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+    :root {
+      --panel-bg: rgba(9, 16, 29, 0.72);
+      --panel-border: rgba(255, 221, 123, 0.85);
+      --gold: #ffd84f;
+      --silver: #d8dde5;
+      --bronze: #e39a58;
+      --danger: #ff6565;
+      --ok: #90ff90;
     }
 
-    .settings {
-      background: rgba(255,255,255,0.8);
-      padding: 10px 15px;
-      border-radius: 0 0 12px 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      text-align: center;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .content {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .leaderboard {
-      background: rgba(255,255,255,0.9);
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-      width: 400px;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-      font-weight: 700;
-      text-shadow: 0 0 5px rgba(0,0,0,0.2);
-      transition: color 0.3s, font-size 0.3s;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      transition: font-size 0.3s;
-    }
-
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-      transition: color 0.3s;
-    }
-
-    input[type="text"], input[type="number"] {
-      width: 90%;
-      padding: 6px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      text-align: center;
+    * {
       box-sizing: border-box;
     }
 
-    .copy-btn {
-      padding: 10px 20px;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #fff;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at 50% 40%, #192338, #070c15 55%, #02050b);
+      overflow: hidden;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 0;
+      padding: 20px;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: minmax(240px, 320px) 1fr minmax(240px, 320px);
+      grid-template-rows: auto 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 2px solid var(--panel-border);
+      border-radius: 14px;
+      backdrop-filter: blur(2px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+      padding: 12px;
+      pointer-events: auto;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 1rem;
+      color: var(--gold);
+      text-align: center;
+    }
+
+    .rank-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .rank-item {
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.95rem;
+    }
+
+    .rank-item .place {
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .rank-item .value {
+      font-variant-numeric: tabular-nums;
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .wins small {
+      color: #bdcdf5;
+      font-size: 0.75rem;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .arena-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    #timer {
+      margin-bottom: 10px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #fff8d6;
+      text-shadow: 0 0 18px rgba(255, 188, 110, 0.65);
+      transform-origin: center;
+    }
+
+    #timer.warning {
+      animation: pulse 1.05s infinite;
+      color: var(--danger);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.14); }
+      100% { transform: scale(1); }
+    }
+
+    canvas {
+      width: min(74vh, 74vw);
+      height: min(74vh, 74vw);
+      border-radius: 50%;
+      border: 6px solid rgba(205, 168, 93, 0.95);
+      box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.35), inset 0 0 50px rgba(0, 0, 0, 0.6);
+      background: radial-gradient(circle at 50% 40%, #3a2f25, #221812 65%, #130e0a);
+    }
+
+    .controls {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 16px;
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: rgba(2, 5, 12, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px;
+      border-radius: 12px;
+    }
+
+    button {
       border: none;
       border-radius: 8px;
-      background: #ff4655;
-      color: white;
+      background: #2267eb;
+      color: #fff;
+      font-weight: 600;
+      padding: 8px 12px;
       cursor: pointer;
-      font-size: 1em;
-      transition: 0.3s;
     }
 
-    .copy-btn:hover {
-      background: #e63745;
+    button.secondary {
+      background: #4a556f;
     }
 
-    .copy-info {
-      font-size: 0.9em;
-      color: #333;
-      margin-top: 5px;
+    .status {
       width: 100%;
+      text-align: center;
+      color: #bde0ff;
+      font-size: 0.88rem;
+      min-height: 1rem;
     }
 
-    tr:nth-child(2) td:first-child { color: gold; font-weight: bold; }
-    tr:nth-child(3) td:first-child { color: silver; font-weight: bold; }
-    tr:nth-child(4) td:first-child { color: #cd7f32; font-weight: bold; }
+    .overlay-note {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.45);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #d9e4ff;
+    }
+
+    @media (max-width: 980px) {
+      .hud {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="settings">
-    <label>Название: <input id="titleInput" type="text" placeholder="ТОП ДОНАТОВ KASPI"></label>
-    <label>Фон таблицы: <input id="tableColor" type="color"></label>
-    <label>Прозрачность: <input id="tableOpacity" type="range" min="0" max="1" step="0.1" value="0.9"></label>
-    <label>Скругление: <input id="borderRadius" type="range" min="0" max="50" step="1" value="20"></label>
-    <label>Размер шрифта (название): <input id="titleSize" type="number" min="10" max="100" value="32"></label>
-    <label>Цвет шрифта (название): <input id="titleColor" type="color" value="#d90000"></label>
-    <label>Размер шрифта (таблица): <input id="tableSize" type="number" min="10" max="50" value="16"></label>
-    <label>Цвет текста (имена): <input id="nameColor" type="color" value="#000000"></label>
-    <label>Цвет текста (суммы): <input id="sumColor" type="color" value="#000000"></label>
-    <label>Рамки: <input id="toggleBorders" type="checkbox" checked></label>
-    <label>Шрифт:
-      <select id="fontSelect">
-        <option value="Segoe UI">Segoe UI</option>
-        <option value="Arial">Arial</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Comic Sans MS">Comic Sans</option>
-      </select>
-    </label>
-    <button id="resetSettings">Сбросить</button>
-    <button class="copy-btn" onclick="copyURL()">Скопировать ссылку</button>
-    <div class="copy-info" id="copyStatus"></div>
-  </div>
+  <div class="overlay-note">Оверлей: прозрачный фон + топ HP и топ побед</div>
 
-  <div class="content">
-    <div class="leaderboard">
-      <h1 id="title">ТОП ДОНАТОВ KASPI</h1>
-      <table>
-        <tr>
-          <th>Место</th>
-          <th>Имя</th>
-          <th>Сумма</th>
-        </tr>
-        <tr>
-          <td>🥇 ТОП-1</td>
-          <td><input id="name1" type="text" placeholder="Имя 1"></td>
-          <td><input id="sum1" type="number" placeholder="₸"></td>
-        </tr>
-        <tr>
-          <td>🥈 ТОП-2</td>
-          <td><input id="name2" type="text" placeholder="Имя 2"></td>
-          <td><input id="sum2" type="number" placeholder="₸"></td>
-        </tr>
-        <tr>
-          <td>🥉 ТОП-3</td>
-          <td><input id="name3" type="text" placeholder="Имя 3"></td>
-          <td><input id="sum3" type="number" placeholder="₸"></td>
-        </tr>
-      </table>
+  <div class="hud">
+    <div class="panel">
+      <h2>HP бойцов (топ-3)</h2>
+      <ul id="hpList" class="rank-list"></ul>
+    </div>
+
+    <div class="arena-wrap">
+      <div id="timer">05:00</div>
+      <canvas id="arena" width="760" height="760"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>Топ побед (топ-3)</h2>
+      <ul id="winsList" class="rank-list"></ul>
     </div>
   </div>
 
+  <div class="controls">
+    <button id="restartBtn">Новый раунд</button>
+    <button class="secondary" id="clearWinsBtn">Сбросить топ побед</button>
+    <div class="status" id="statusText"></div>
+  </div>
+
   <script>
-    const title = document.getElementById('title');
-    const leaderboard = document.querySelector('.leaderboard');
-    const table = document.querySelector('table');
+    const countries = [
+      "Украина",
+      "Казахстан",
+      "Беларусь",
+      "Литва",
+      "Молдова",
+      "Россия",
+      "Таджикистан",
+      "Азербайджан"
+    ];
 
-    function save(key, value) { localStorage.setItem(key, value); }
-    function load(key, fallback) { return localStorage.getItem(key) || fallback; }
+    const countryColors = {
+      "Украина": "#4fafff",
+      "Казахстан": "#57d2ff",
+      "Беларусь": "#86d36b",
+      "Литва": "#d7a84d",
+      "Молдова": "#7fb8ff",
+      "Россия": "#ff5f71",
+      "Таджикистан": "#8ee09d",
+      "Азербайджан": "#59d8d5"
+    };
 
-    function copyURL() {
-      const url = window.location.href;
-      navigator.clipboard.writeText(url).then(() => {
-        document.getElementById('copyStatus').innerText = "Ссылка скопирована!";
-        setTimeout(() => document.getElementById('copyStatus').innerText = "", 2000);
-      }).catch(() => {
-        document.getElementById('copyStatus').innerText = "Не удалось скопировать";
+    const arena = document.getElementById("arena");
+    const ctx = arena.getContext("2d");
+    const hpList = document.getElementById("hpList");
+    const winsList = document.getElementById("winsList");
+    const timerEl = document.getElementById("timer");
+    const statusText = document.getElementById("statusText");
+
+    const center = { x: arena.width / 2, y: arena.height / 2 };
+    const arenaRadius = arena.width / 2 - 8;
+
+    const ROUND_SECONDS = 300;
+    const EXTRA_SECONDS = 30;
+    const PASSIVE_DRAIN_PER_SEC = 0.7;
+    const winsKey = "country-clash-wins";
+
+    let fighters = [];
+    let wins = loadWins();
+    let timer = ROUND_SECONDS;
+    let running = true;
+    let lastTs = performance.now();
+    let deathCounter = 0;
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function hpToRadius(hp) {
+      return Math.max(18, Math.sqrt(hp) * 2.9);
+    }
+
+    function loadWins() {
+      try {
+        const raw = localStorage.getItem(winsKey);
+        if (!raw) return {};
+        return JSON.parse(raw);
+      } catch {
+        return {};
+      }
+    }
+
+    function saveWins() {
+      localStorage.setItem(winsKey, JSON.stringify(wins));
+    }
+
+    function spawnFighters() {
+      fighters = countries.map((name, i) => {
+        let x;
+        let y;
+        let safe = false;
+        const hp = Math.round(random(70, 140));
+        const radius = hpToRadius(hp);
+
+        while (!safe) {
+          x = random(center.x - arenaRadius * 0.7, center.x + arenaRadius * 0.7);
+          y = random(center.y - arenaRadius * 0.7, center.y + arenaRadius * 0.7);
+          const fromCenter = Math.hypot(x - center.x, y - center.y);
+          if (fromCenter + radius > arenaRadius - 4) continue;
+          safe = fighters.every((f) => Math.hypot(x - f.x, y - f.y) > radius + f.radius + 10);
+        }
+
+        return {
+          id: i,
+          name,
+          color: countryColors[name] || "#7cc4ff",
+          hp,
+          maxHp: hp,
+          radius,
+          x,
+          y,
+          vx: random(-95, 95),
+          vy: random(-95, 95),
+          alive: true,
+          deathOrder: null
+        };
       });
     }
 
-    document.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
-      input.value = load(input.id, '');
-      input.addEventListener('input', () => save(input.id, input.value));
+    function drawArena() {
+      ctx.clearRect(0, 0, arena.width, arena.height);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, arenaRadius, 0, Math.PI * 2);
+      ctx.clip();
+
+      for (const f of fighters) {
+        if (!f.alive) continue;
+        const grad = ctx.createRadialGradient(f.x - f.radius * 0.25, f.y - f.radius * 0.25, 4, f.x, f.y, f.radius);
+        grad.addColorStop(0, "#ffffff");
+        grad.addColorStop(0.2, f.color);
+        grad.addColorStop(1, "#0f182b");
+
+        ctx.beginPath();
+        ctx.fillStyle = grad;
+        ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(255,255,255,0.65)";
+        ctx.stroke();
+
+        ctx.fillStyle = "#eaf3ff";
+        ctx.font = `${Math.max(11, f.radius * 0.46)}px Segoe UI`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const short = f.name.slice(0, 2).toUpperCase();
+        ctx.fillText(short, f.x, f.y);
+      }
+
+      ctx.restore();
+    }
+
+    function hitWall(f) {
+      const dx = f.x - center.x;
+      const dy = f.y - center.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist + f.radius >= arenaRadius) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const dot = f.vx * nx + f.vy * ny;
+        f.vx -= 2 * dot * nx;
+        f.vy -= 2 * dot * ny;
+
+        const overlap = dist + f.radius - arenaRadius;
+        f.x -= nx * overlap;
+        f.y -= ny * overlap;
+      }
+    }
+
+    function collide(a, b) {
+      if (!a.alive || !b.alive) return;
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = a.radius + b.radius;
+
+      if (dist >= minDist || dist === 0) return;
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const relativeVx = a.vx - b.vx;
+      const relativeVy = a.vy - b.vy;
+      const speed = relativeVx * nx + relativeVy * ny;
+
+      if (speed > 0) return;
+
+      const impulse = -1.1 * speed;
+      a.vx += impulse * nx;
+      a.vy += impulse * ny;
+      b.vx -= impulse * nx;
+      b.vy -= impulse * ny;
+
+      const overlap = minDist - dist;
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+
+      const damage = random(1.2, 4.2);
+      applyDamage(a, damage);
+      applyDamage(b, damage * random(0.9, 1.25));
+    }
+
+    function applyDamage(f, dmg) {
+      if (!f.alive) return;
+      f.hp -= dmg;
+      if (f.hp <= 0) {
+        f.hp = 0;
+        f.alive = false;
+        deathCounter += 1;
+        f.deathOrder = deathCounter;
+      }
+      f.radius = hpToRadius(f.hp);
+    }
+
+    function update(dt) {
+      const living = fighters.filter((f) => f.alive);
+
+      for (const f of living) {
+        f.vx *= 0.998;
+        f.vy *= 0.998;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+
+        applyDamage(f, PASSIVE_DRAIN_PER_SEC * dt);
+        hitWall(f);
+      }
+
+      for (let i = 0; i < fighters.length; i += 1) {
+        for (let j = i + 1; j < fighters.length; j += 1) {
+          collide(fighters[i], fighters[j]);
+        }
+      }
+    }
+
+    function updateTimer(dt) {
+      if (!running) return;
+      timer -= dt;
+      const alive = fighters.filter((f) => f.alive).length;
+
+      if (timer <= 0 && alive > 0) {
+        timer += EXTRA_SECONDS;
+        statusText.textContent = `Время вышло, добавлено +${EXTRA_SECONDS} сек, пока не останется 0 стран.`;
+      }
+
+      if (timer <= 60) {
+        timerEl.classList.add("warning");
+      } else {
+        timerEl.classList.remove("warning");
+      }
+
+      timerEl.textContent = formatTime(Math.max(0, timer));
+    }
+
+    function formatTime(value) {
+      const sec = Math.floor(value);
+      const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+      const ss = String(sec % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function renderHpTop() {
+      const top = fighters
+        .filter((f) => f.alive)
+        .sort((a, b) => b.hp - a.hp)
+        .slice(0, 3);
+
+      hpList.innerHTML = "";
+      for (let i = 0; i < 3; i += 1) {
+        const item = top[i];
+        const li = document.createElement("li");
+        li.className = "rank-item";
+
+        if (!item) {
+          li.innerHTML = `<span class="place">${i + 1}</span><span>—</span><span class="value">0</span>`;
+        } else {
+          li.innerHTML = `<span class="place">${i + 1}</span><span>${item.name}</span><span class="value">${Math.round(item.hp)}</span>`;
+        }
+
+        hpList.appendChild(li);
+      }
+    }
+
+    function renderWinsTop() {
+      const sorted = Object.entries(wins)
+        .sort((a, b) => b[1].score - a[1].score)
+        .slice(0, 3);
+
+      winsList.innerHTML = "";
+      for (let i = 0; i < 3; i += 1) {
+        const row = sorted[i];
+        const li = document.createElement("li");
+        li.className = "rank-item wins";
+
+        if (!row) {
+          li.innerHTML = `<span class="place">${i + 1}</span><span>—</span><span class="value">0</span>`;
+        } else {
+          const [name, stats] = row;
+          li.innerHTML = `<span class="place">${i + 1}</span><span>${name}<small>🥇${stats.first} / 🥈${stats.second} / 🥉${stats.third}</small></span><span class="value">${stats.score}</span>`;
+        }
+
+        winsList.appendChild(li);
+      }
+    }
+
+    function finalizeRound() {
+      running = false;
+      const ranking = [...fighters].sort((a, b) => b.deathOrder - a.deathOrder).slice(0, 3);
+      const medals = ["first", "second", "third"];
+      const points = [3, 2, 1];
+
+      ranking.forEach((f, idx) => {
+        wins[f.name] ||= { first: 0, second: 0, third: 0, score: 0 };
+        wins[f.name][medals[idx]] += 1;
+        wins[f.name].score += points[idx];
+      });
+
+      saveWins();
+      renderWinsTop();
+      const podium = ranking.map((f, idx) => `${idx + 1}. ${f.name}`).join(" | ");
+      statusText.textContent = `Раунд завершён. Подиум: ${podium}`;
+    }
+
+    function resetRound() {
+      timer = ROUND_SECONDS;
+      running = true;
+      deathCounter = 0;
+      statusText.textContent = "Раунд начался.";
+      spawnFighters();
+      timerEl.classList.remove("warning");
+      timerEl.textContent = formatTime(timer);
+    }
+
+    function frame(ts) {
+      const dt = Math.min((ts - lastTs) / 1000, 0.033);
+      lastTs = ts;
+
+      if (running) {
+        update(dt);
+        updateTimer(dt);
+        if (fighters.every((f) => !f.alive)) {
+          finalizeRound();
+        }
+      }
+
+      drawArena();
+      renderHpTop();
+      requestAnimationFrame(frame);
+    }
+
+    document.getElementById("restartBtn").addEventListener("click", resetRound);
+    document.getElementById("clearWinsBtn").addEventListener("click", () => {
+      wins = {};
+      saveWins();
+      renderWinsTop();
+      statusText.textContent = "Топ побед очищен.";
     });
 
-    const titleInput = document.getElementById('titleInput');
-    title.textContent = load('tableTitle', 'ТОП ДОНАТОВ KASPI');
-    titleInput.addEventListener('input', () => {
-      title.textContent = titleInput.value || 'ТОП ДОНАТОВ KASPI';
-      save('tableTitle', title.textContent);
-    });
-
-    const tableColor = document.getElementById('tableColor');
-    leaderboard.style.backgroundColor = load('tableColor', '#ffffff');
-    tableColor.addEventListener('input', () => {
-      leaderboard.style.backgroundColor = tableColor.value;
-      save('tableColor', tableColor.value);
-    });
-
-    const tableOpacity = document.getElementById('tableOpacity');
-    leaderboard.style.opacity = load('tableOpacity', '0.9');
-    tableOpacity.addEventListener('input', () => {
-      leaderboard.style.opacity = tableOpacity.value;
-      save('tableOpacity', tableOpacity.value);
-    });
-
-    const borderRadius = document.getElementById('borderRadius');
-    leaderboard.style.borderRadius = load('borderRadius', '20') + 'px';
-    borderRadius.addEventListener('input', () => {
-      leaderboard.style.borderRadius = borderRadius.value + 'px';
-      save('borderRadius', borderRadius.value);
-    });
-
-    const titleSize = document.getElementById('titleSize');
-    const titleColor = document.getElementById('titleColor');
-    title.style.fontSize = load('titleSize', '32') + 'px';
-    title.style.color = load('titleColor', '#d90000');
-    titleSize.addEventListener('input', () => {
-      title.style.fontSize = titleSize.value + 'px';
-      save('titleSize', titleSize.value);
-    });
-    titleColor.addEventListener('input', () => {
-      title.style.color = titleColor.value;
-      save('titleColor', titleColor.value);
-    });
-
-    const tableSize = document.getElementById('tableSize');
-    table.style.fontSize = load('tableSize', '16') + 'px';
-    tableSize.addEventListener('input', () => {
-      table.style.fontSize = tableSize.value + 'px';
-      save('tableSize', tableSize.value);
-    });
-
-    const nameColor = document.getElementById('nameColor');
-    const sumColor = document.getElementById('sumColor');
-    document.querySelectorAll('input[id^="name"]').forEach(el => el.style.color = load('nameColor', '#000000'));
-    document.querySelectorAll('input[id^="sum"]').forEach(el => el.style.color = load('sumColor', '#000000'));
-    nameColor.addEventListener('input', () => {
-      document.querySelectorAll('input[id^="name"]').forEach(el => el.style.color = nameColor.value);
-      save('nameColor', nameColor.value);
-    });
-    sumColor.addEventListener('input', () => {
-      document.querySelectorAll('input[id^="sum"]').forEach(el => el.style.color = sumColor.value);
-      save('sumColor', sumColor.value);
-    });
-
-    const toggleBorders = document.getElementById('toggleBorders');
-    const applyBorders = () => {
-      document.querySelectorAll('th, td').forEach(cell => cell.style.borderBottom = toggleBorders.checked ? '1px solid #ddd' : 'none');
-    };
-    toggleBorders.checked = load('borders', 'true') === 'true';
-    applyBorders();
-    toggleBorders.addEventListener('change', () => {
-      save('borders', toggleBorders.checked);
-      applyBorders();
-    });
-
-    const fontSelect = document.getElementById('fontSelect');
-    document.body.style.fontFamily = load('font', 'Segoe UI');
-    fontSelect.addEventListener('change', () => {
-      document.body.style.fontFamily = fontSelect.value;
-      save('font', fontSelect.value);
-    });
-
-    document.getElementById('resetSettings').addEventListener('click', () => {
-      localStorage.clear();
-      location.reload();
+    resetRound();
+    renderWinsTop();
+    requestAnimationFrame((ts) => {
+      lastTs = ts;
+      frame(ts);
     });
   </script>
 </body>
